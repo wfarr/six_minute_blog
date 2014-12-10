@@ -1,0 +1,22 @@
+#!/bin/sh
+
+set -e
+
+script/bootstrap
+
+if [ $# -ne 0 ]; then
+  bundle exec rspec "$@"
+else
+  TEST_QUEUE_WORKERS=1
+
+  if [ -f /proc/cpuinfo ]; then
+    TEST_QUEUE_WORKERS=$(cat /proc/cpuinfo | grep processor | wc -l)
+  else
+    TEST_QUEUE_WORKERS=$(/usr/sbin/sysctl -n hw.activecpu)
+  fi
+
+  export TEST_QUEUE_WORKERS
+  export TEST_QUEUE_VERBOSE=1
+
+  bundle exec script/test-queue --format progress spec
+fi

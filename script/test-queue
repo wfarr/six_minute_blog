@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path("./../../spec", __FILE__)
+
+unless ENV["TEST_QUEUE_WORKERS"]
+  abort "TEST_QUEUE_WORKERS must be set in env!"
+end
+
+require "rails_helper"
+
+require "test_queue"
+require "test_queue/runner/rspec"
+
+class CustomTestRunner < TestQueue::Runner::RSpec
+  def after_fork(num)
+    super
+
+    ActiveRecord::Base.configurations["test"]["database"] << num.to_s
+    ActiveRecord::Base.establish_connection(:test)
+  end
+
+  def prepare(num)
+    system "mysqldump -u root --no-data six_minute_blog_test > tmp/schema.sql"
+
+    num.times do |i|
+      system "mysql -u root -e 'DROP DATABASE IF EXISTS six_minute_blog_test#{i}'"
+      system "mysql -u root -e 'CREATE DATABASE six_minute_blog_test#{i}'"
+      system "mysql -u root six_minute_blog_test#{i} < tmp/schema.sql"
+    end
+  end
+end
+
+CustomTestRunner.new.execute

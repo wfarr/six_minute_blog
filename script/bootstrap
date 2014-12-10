@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+mkdir -p tmp
+
+args="--binstubs bundle-bin --path vendor/gems"
+
+checksum="$(echo "$args" | cat - Gemfile* script/bootstrap 2>/dev/null | shasum | awk '{ print $1 }')"
+
+args="$args $@"
+
+db_sha () {
+  cat db/migrate/*.rb | shasum | awk '{ print $1 }'
+}
+
+if ! bundle check >/dev/null 2>&1 || [ "$checksum" != "$(cat tmp/bundle.sha 2>/dev/null)" ]; then
+  echo "==> Updating bundle..."
+  bundle install $args
+
+  echo "$checksum" > tmp/bundle.sha
+else
+  echo "==> Bundle up-to-date!"
+fi
+
+if [ "$(db_sha)" != "$(cat tmp/migrations.sha 2>/dev/null)" ]; then
+  echo "==> Updating DB..."
+  bundle exec rake db:create db:schema:load db:migrate db:test:prepare
+  db_sha > tmp/migrations.sha
+else
+  echo "==> DB up-to-date!"
+fi
