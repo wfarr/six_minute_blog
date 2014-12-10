@@ -23,9 +23,9 @@ class CustomTestRunner < TestQueue::Runner::RSpec
     system "mysqldump -u root --no-data six_minute_blog_test > tmp/schema.sql"
 
     num.times do |i|
-      system "mysql -u root -e 'DROP DATABASE IF EXISTS six_minute_blog_test#{i}'"
-      system "mysql -u root -e 'CREATE DATABASE six_minute_blog_test#{i}'"
-      system "mysql -u root six_minute_blog_test#{i} < tmp/schema.sql"
+      system "mysql -u root -e 'DROP DATABASE IF EXISTS six_minute_blog_test#{i+1}'"
+      system "mysql -u root -e 'CREATE DATABASE six_minute_blog_test#{i+1}'"
+      system "mysql -u root six_minute_blog_test#{i+1} < tmp/schema.sql"
     end
   end
 end
